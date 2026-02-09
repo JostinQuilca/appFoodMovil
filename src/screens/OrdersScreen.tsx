@@ -1,4 +1,3 @@
-// src/screens/OrdersScreen.tsx
 import React, { useState, useCallback } from "react";
 import {
   View,

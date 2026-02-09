@@ -1,4 +1,3 @@
-// src/screens/RegisterScreen.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -39,8 +38,6 @@ export default function RegisterScreen() {
     }
 
     setLoading(true);
-    // CORRECCIÓN: Pasamos el 'form' directo. El AuthContext ya sabe qué campos extraer.
-    // Esto evita enviar campos duplicados o con nombres incorrectos.
     const success = await register(form);
 
     setLoading(false);

@@ -20,7 +20,19 @@ const CREATE_PEDIDO_MUTATION = `
   mutation CreatePedidoMaestroDetalle($createPedidoInput: CreatePedidoInput!) {
     createPedido(createPedidoInput: $createPedidoInput) {
       id
+      usuarioCedula
+      direccionEntrega
+      tipoEntrega
+      estadoPedido
       montoTotal
+      fechaCreacion
+      detalles {
+        itemId
+        cantidad
+        precioUnitario
+        subtotal
+        notasAdicionales
+      }
     }
   }
 `;
@@ -77,6 +89,8 @@ export default function CartScreen() {
       });
 
       if (response.data.data?.createPedido) {
+        const created = response.data.data.createPedido;
+        console.log("Pedido creado:", created);
         Alert.alert("¡Pedido Enviado!", "Tu comida está en camino.");
         clearCart();
         navigation.navigate("Menú"); // Volver al inicio

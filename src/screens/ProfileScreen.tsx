@@ -1,71 +1,120 @@
-// src/screens/ProfileScreen.tsx
 import React, { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   Alert,
   ScrollView,
+  Modal,
+  TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native"; // <--- Importante
 import {
   User,
-  Lock,
   Mail,
-  Phone,
   Shield,
   LogOut,
-  Save,
+  Phone,
+  CreditCard,
+  Eye,
+  EyeOff,
+  Lock,
 } from "lucide-react-native";
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuth();
-  const navigation = useNavigation<any>();
+  const { user, logout, changePassword } = useAuth();
+  const navigation = useNavigation<any>(); // <--- Inicializar navegación
 
-  // Estados para el formulario (pre-cargados con datos del usuario)
-  const [nombre, setNombre] = useState(user?.nombre || "");
-  const [apellido, setApellido] = useState(""); // El contexto actual no guarda apellido explícito en el login, pero lo preparamos
-  const [password, setPassword] = useState("");
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleLogout = () => {
     Alert.alert("Cerrar Sesión", "¿Estás seguro de que quieres salir?", [
       { text: "Cancelar", style: "cancel" },
-      { text: "Salir", onPress: logout, style: "destructive" },
+      {
+        text: "Sí, Salir",
+        style: "destructive",
+        onPress: async () => {
+          await logout();
+
+          // ✅ CORRECCIÓN: Forzar redirección al Menú (ClientApp)
+          // Esto cierra el perfil y reinicia la historia de navegación
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "ClientApp" }],
+          });
+        },
+      },
     ]);
   };
 
-  const handleUpdate = () => {
-    // AQUÍ IRÍA LA LLAMADA A LA API
-    // Como tu backend actual no tiene la mutación 'updateUsuario' expuesta,
-    // mostramos una alerta informativa.
-    if (!password && nombre === user?.nombre) {
-      Alert.alert("Sin cambios", "No has modificado ninguna información.");
+  const handleChangePassword = async () => {
+    if (!oldPassword.trim() || !newPassword.trim() || !confirmPassword.trim()) {
+      Alert.alert("Error", "Por favor completa todos los campos");
       return;
     }
 
-    Alert.alert(
-      "Información",
-      "La función de actualizar perfil está en desarrollo en el servidor. Los cambios no se guardarán permanentemente todavía."
-    );
+    if (newPassword !== confirmPassword) {
+      Alert.alert("Error", "Las nuevas contraseñas no coinciden");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      Alert.alert("Error", "La contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+
+    if (oldPassword === newPassword) {
+      Alert.alert(
+        "Error",
+        "La nueva contraseña debe ser diferente a la anterior",
+      );
+      return;
+    }
+
+    setLoading(true);
+    const result = await changePassword(oldPassword, newPassword);
+    setLoading(false);
+
+    if (result.success) {
+      Alert.alert("Éxito", result.message, [
+        {
+          text: "OK",
+          onPress: () => {
+            setShowChangePassword(false);
+            setOldPassword("");
+            setNewPassword("");
+            setConfirmPassword("");
+          },
+        },
+      ]);
+    } else {
+      Alert.alert("Error", result.message);
+    }
   };
 
+  // Definir color según el rol
   const roleColor =
     user?.rol?.nombre === "ADMINISTRADOR" ? "#D7263D" : "#3b82f6";
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* CABECERA DE PERFIL */}
+      {/* 1. CABECERA CON AVATAR */}
       <View style={styles.header}>
         <View style={[styles.avatarContainer, { borderColor: roleColor }]}>
           <Text style={[styles.avatarText, { color: roleColor }]}>
             {user?.nombre?.charAt(0).toUpperCase() || "U"}
           </Text>
-        </View>
-        <Text style={styles.userName}>{user?.nombre}</Text>
-        <View style={[styles.badge, { backgroundColor: roleColor + "20" }]}>
+
           <Shield size={14} color={roleColor} />
           <Text style={[styles.roleText, { color: roleColor }]}>
             {user?.rol?.nombre}
@@ -73,53 +122,181 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* FORMULARIO DE DATOS */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Información Personal</Text>
+      {/* 2. TARJETA DE INFORMACIÓN (Solo Lectura) */}
+      <View style={styles.infoCard}>
+        <Text style={styles.cardTitle}>Detalles de la Cuenta</Text>
 
-        <View style={styles.inputGroup}>
-          <User size={20} color="#666" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            value={nombre}
-            onChangeText={setNombre}
-            placeholder="Nombre"
-          />
+        {/* Email */}
+        <View style={styles.infoRow}>
+          <View style={styles.iconBox}>
+            <Mail size={20} color="#555" />
+          </View>
+          <View>
+            <Text style={styles.label}>Correo Electrónico</Text>
+            <Text style={styles.value}>{user?.email}</Text>
+          </View>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Mail size={20} color="#666" style={styles.icon} />
-          <TextInput
-            style={[styles.input, styles.disabledInput]}
-            value={user?.email}
-            editable={false}
-          />
+        {/* Cédula */}
+        <View style={styles.infoRow}>
+          <View style={styles.iconBox}>
+            <CreditCard size={20} color="#555" />
+          </View>
+          <View>
+            <Text style={styles.label}>Cédula</Text>
+            <Text style={styles.value}>{user?.cedula || "No registrada"}</Text>
+          </View>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Lock size={20} color="#666" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Nueva Contraseña (opcional)"
-            secureTextEntry
-          />
+        {/* Teléfono */}
+        <View style={styles.infoRow}>
+          <View style={styles.iconBox}>
+            <Phone size={20} color="#555" />
+          </View>
         </View>
+
+        {/* Dirección (si existe) */}
+        {user?.direccionPrincipal && (
+          <View style={styles.infoRow}>
+            <View style={styles.iconBox}>
+              <User size={20} color="#555" />
+            </View>
+            <View>
+              <Text style={styles.label}>Dirección Principal</Text>
+              <Text style={styles.value}>{user.direccionPrincipal}</Text>
+            </View>
+          </View>
+        )}
       </View>
 
-      {/* BOTONES DE ACCIÓN */}
-      <View style={styles.actions}>
-        <TouchableOpacity style={styles.saveBtn} onPress={handleUpdate}>
-          <Save size={20} color="white" />
-          <Text style={styles.saveText}>Guardar Cambios</Text>
-        </TouchableOpacity>
+      {/* 3. BOTÓN DE CAMBIAR CONTRASEÑA */}
+      <TouchableOpacity
+        style={styles.changePasswordBtn}
+        onPress={() => setShowChangePassword(true)}
+      >
+        <Lock size={20} color="#fff" />
+        <Text style={styles.changePasswordText}>Cambiar Contraseña</Text>
+      </TouchableOpacity>
 
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <LogOut size={20} color="#D7263D" />
-          <Text style={styles.logoutText}>Cerrar Sesión</Text>
-        </TouchableOpacity>
-      </View>
+      {/* 4. BOTÓN DE CERRAR SESIÓN */}
+      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+        <LogOut size={20} color="#D7263D" />
+        <Text style={styles.logoutText}>Cerrar Sesión</Text>
+      </TouchableOpacity>
+
+      {/* MODAL: CAMBIAR CONTRASEÑA */}
+      <Modal
+        visible={showChangePassword}
+        transparent
+        animationType="slide"
+        onRequestClose={() => !loading && setShowChangePassword(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Cambiar Contraseña</Text>
+
+            {/* Contraseña Anterior */}
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Contraseña Actual"
+                secureTextEntry={!showOldPassword}
+                value={oldPassword}
+                onChangeText={setOldPassword}
+                editable={!loading}
+                placeholderTextColor="#999"
+              />
+              <TouchableOpacity
+                onPress={() => setShowOldPassword(!showOldPassword)}
+                disabled={loading}
+              >
+                {showOldPassword ? (
+                  <Eye size={20} color="#666" />
+                ) : (
+                  <EyeOff size={20} color="#666" />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Nueva Contraseña */}
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Nueva Contraseña"
+                secureTextEntry={!showNewPassword}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                editable={!loading}
+                placeholderTextColor="#999"
+              />
+              <TouchableOpacity
+                onPress={() => setShowNewPassword(!showNewPassword)}
+                disabled={loading}
+              >
+                {showNewPassword ? (
+                  <Eye size={20} color="#666" />
+                ) : (
+                  <EyeOff size={20} color="#666" />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Confirmar Contraseña */}
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Confirmar Nueva Contraseña"
+                secureTextEntry={!showConfirmPassword}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                editable={!loading}
+                placeholderTextColor="#999"
+              />
+              <TouchableOpacity
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                disabled={loading}
+              >
+                {showConfirmPassword ? (
+                  <Eye size={20} color="#666" />
+                ) : (
+                  <EyeOff size={20} color="#666" />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Botones */}
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={[styles.cancelBtn, loading && { opacity: 0.5 }]}
+                onPress={() => {
+                  setShowChangePassword(false);
+                  setOldPassword("");
+                  setNewPassword("");
+                  setConfirmPassword("");
+                }}
+                disabled={loading}
+              >
+                <Text style={styles.cancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.confirmBtn,
+                  loading && { backgroundColor: "#3b82f6aa" },
+                ]}
+                onPress={handleChangePassword}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.confirmBtnText}>Cambiar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -131,82 +308,172 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: "center",
   },
-  header: { alignItems: "center", marginBottom: 30, marginTop: 20 },
+
+  // Cabecera
+  header: { alignItems: "center", marginBottom: 25, marginTop: 10 },
   avatarContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 4,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 3,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "white",
-    marginBottom: 15,
-    elevation: 5,
+    marginBottom: 12,
+    elevation: 4,
   },
-  avatarText: { fontSize: 40, fontWeight: "bold" },
-  userName: { fontSize: 24, fontWeight: "bold", color: "#333" },
+  avatarText: { fontSize: 36, fontWeight: "bold" },
+  userName: { fontSize: 22, fontWeight: "bold", color: "#333" },
   badge: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginTop: 8,
-    gap: 6,
+    paddingVertical: 5,
+    borderRadius: 15,
+    marginTop: 6,
+    gap: 5,
   },
   roleText: { fontWeight: "bold", fontSize: 12 },
 
-  section: {
+  // Tarjeta de Información
+  infoCard: {
     width: "100%",
     backgroundColor: "white",
-    borderRadius: 15,
+    borderRadius: 16,
     padding: 20,
     elevation: 2,
-    marginBottom: 20,
+    marginBottom: 25,
   },
-  sectionTitle: {
+  cardTitle: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#666",
-    marginBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    paddingBottom: 10,
+    color: "#888",
+    marginBottom: 20,
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
-  inputGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 15,
-    backgroundColor: "#f9f9f9",
-    borderRadius: 10,
-    paddingHorizontal: 10,
-  },
-  icon: { marginRight: 10 },
-  input: { flex: 1, paddingVertical: 12, fontSize: 16, color: "#333" },
-  disabledInput: { color: "#999" },
 
-  actions: { width: "100%", gap: 15 },
-  saveBtn: {
-    backgroundColor: "#D7263D",
+  // Filas de Datos
+  infoRow: { flexDirection: "row", alignItems: "center", marginBottom: 18 },
+  iconBox: {
+    width: 40,
+    height: 40,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 15,
+  },
+  label: { fontSize: 12, color: "#888", marginBottom: 2 },
+  value: { fontSize: 16, color: "#333", fontWeight: "500" },
+
+  // Botón Cambiar Contraseña
+  changePasswordBtn: {
+    width: "100%",
+    backgroundColor: "#3b82f6",
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    padding: 15,
+    padding: 16,
     borderRadius: 12,
     gap: 10,
-    elevation: 3,
+    elevation: 1,
+    marginBottom: 15,
   },
-  saveText: { color: "white", fontWeight: "bold", fontSize: 16 },
+  changePasswordText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+
+  // Botón Salir
   logoutBtn: {
-    backgroundColor: "white",
+    width: "100%",
+    backgroundColor: "#fff",
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    padding: 15,
+    padding: 16,
     borderRadius: 12,
     gap: 10,
     borderWidth: 1,
     borderColor: "#D7263D",
+    elevation: 1,
   },
-  logoutText: { color: "#D7263D", fontWeight: "bold", fontSize: 16 },
+  logoutText: {
+    color: "#D7263D",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContainer: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 25,
+    paddingBottom: 35,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0f0f0",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 12,
+    color: "#333",
+    fontSize: 14,
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 25,
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 10,
+    backgroundColor: "#f0f0f0",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  cancelBtnText: {
+    color: "#666",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+  confirmBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 10,
+    backgroundColor: "#3b82f6",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  confirmBtnText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
 });

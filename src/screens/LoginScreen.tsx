@@ -24,7 +24,6 @@ export default function LoginScreen() {
   const navigation = useNavigation<any>();
 
   const handleLogin = async () => {
-    // 1. Validaciones básicas
     if (!email || !password) {
       Alert.alert("Error", "Por favor ingresa correo y contraseña");
       return;
@@ -33,15 +32,10 @@ export default function LoginScreen() {
     setIsSubmitting(true);
 
     try {
-      // 2. Llamada al login del Contexto
       const success = await login(email, password);
       setIsSubmitting(false);
 
       if (success) {
-        // 3. ÉXITO:
-        // El AuthContext ya actualizó el usuario.
-        // El AppNavigator detectará el cambio y renderizará las pestañas correctas (Admin o Cliente).
-        // Nosotros solo cerramos esta pantalla de Login para revelar la App.
         if (navigation.canGoBack()) {
           navigation.goBack();
         }

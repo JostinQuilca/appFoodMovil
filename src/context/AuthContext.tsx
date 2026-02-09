@@ -35,11 +35,24 @@ const REGISTER_MUTATION = `
   }
 `;
 
+const CHANGE_PASSWORD_MUTATION = `
+  mutation ChangePassword($changePasswordInput: ChangePasswordInput!) {
+    changePassword(changePasswordInput: $changePasswordInput) {
+      message
+      success
+    }
+  }
+`;
+
 interface AuthContextType {
   user: User | null;
   login: (email: string, pass: string) => Promise<boolean>;
   register: (userData: any) => Promise<boolean>;
   logout: () => Promise<void>;
+  changePassword: (
+    oldPassword: string,
+    newPassword: string,
+  ) => Promise<{ success: boolean; message: string }>;
   isLoading: boolean;
 }
 
@@ -132,8 +145,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
   };
 
+  const changePassword = async (oldPassword: string, newPassword: string) => {
+    try {
+      const response = await apiClient.post("", {
+        query: CHANGE_PASSWORD_MUTATION,
+        variables: {
+          changePasswordInput: {
+            oldPassword,
+            newPassword,
+          },
+        },
+      });
+
+      if (response.data.errors) {
+        console.error("Errores GraphQL:", response.data.errors);
+        return {
+          success: false,
+          message:
+            response.data.errors[0]?.message || "Error al cambiar contraseña",
+        };
+      }
+
+      if (response.data.data?.changePassword?.success) {
+        return {
+          success: true,
+          message:
+            response.data.data.changePassword.message ||
+            "Contraseña actualizada exitosamente",
+        };
+      }
+
+      return {
+        success: false,
+        message: "No se pudo cambiar la contraseña",
+      };
+    } catch (error: any) {
+      console.error("Error al cambiar contraseña:", error);
+      return {
+        success: false,
+        message: error.message || "Error de conexión",
+      };
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
+    <AuthContext.Provider
+      value={{ user, login, register, logout, changePassword, isLoading }}
+    >
       {children}
     </AuthContext.Provider>
   );

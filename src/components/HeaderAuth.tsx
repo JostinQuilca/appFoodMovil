@@ -7,7 +7,6 @@ export default function HeaderAuth() {
   const { user } = useAuth();
   const navigation = useNavigation<any>();
 
-  // CASO 1: Usuario Logueado (Mostrar Burbuja)
   if (user) {
     const inicial = user.nombre ? user.nombre.charAt(0).toUpperCase() : "U";
 
@@ -23,7 +22,6 @@ export default function HeaderAuth() {
     );
   }
 
-  // CASO 2: Usuario No Logueado (Mostrar Botones)
   return (
     <View style={styles.authButtonsContainer}>
       <TouchableOpacity
