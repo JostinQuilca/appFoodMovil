@@ -30,6 +30,8 @@ import ProfileScreen from "../screens/ProfileScreen"; // <--- Importante
 // Pantallas Admin
 import AdminOrdersScreen from "../screens/admin/AdminOrdersScreen";
 import AdminMenuScreen from "../screens/admin/AdminMenuScreen";
+// Pantalla Vendedor
+import VendedorFacturasScreen from "../screens/VendedorFacturasScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -90,6 +92,24 @@ function AdminTabs() {
   );
 }
 
+// 3. NAVEGACIÓN DE VENDEDOR
+function VendedorTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: "#D7263D",
+        headerRight: () => <HeaderAuth />,
+      }}
+    >
+      <Tab.Screen
+        name="Facturas"
+        component={VendedorFacturasScreen}
+        options={{ tabBarIcon: ({ color }) => <History color={color} /> }}
+      />
+    </Tab.Navigator>
+  );
+}
+
 // 3. NAVEGADOR PRINCIPAL
 export default function AppNavigator() {
   const { user, isLoading } = useAuth();
@@ -105,6 +125,8 @@ export default function AppNavigator() {
             {/* LÓGICA DE ROLES PARA PANTALLA PRINCIPAL */}
             {user?.rol?.nombre === "ADMINISTRADOR" ? (
               <Stack.Screen name="AdminPanel" component={AdminTabs} />
+            ) : user?.rol?.nombre === "VENDEDOR" ? (
+              <Stack.Screen name="VendedorApp" component={VendedorTabs} />
             ) : (
               <Stack.Screen name="ClientApp" component={ClientTabs} />
             )}

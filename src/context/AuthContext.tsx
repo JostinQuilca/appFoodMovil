@@ -86,18 +86,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         query: LOGIN_MUTATION,
         variables: { loginInput: { email, password: pass } },
       });
+      if (response.data.errors) {
+        console.error("[Auth] GraphQL errors on login:", response.data.errors);
+        return false;
+      }
 
       const data = response.data.data?.login;
-
       if (data) {
         await AsyncStorage.setItem("access_token", data.access_token);
         await AsyncStorage.setItem("user", JSON.stringify(data.user));
         setUser(data.user);
         return true;
       }
+
+      console.warn(
+        "[Auth] Login response unexpected:",
+        JSON.stringify(response.data, null, 2),
+      );
       return false;
     } catch (error) {
       console.error("Error en login:", error);
+      console.error("Error response data:", (error as any).response?.data);
+      console.error("Error response status:", (error as any).response?.status);
       return false;
     }
   };

@@ -25,7 +25,7 @@ const CREATE_PEDIDO_MUTATION = `
       tipoEntrega
       estadoPedido
       montoTotal
-      fechaCreacion
+      fechaPedido
       detalles {
         itemId
         cantidad
@@ -58,7 +58,7 @@ export default function CartScreen() {
         [
           { text: "Cancelar", style: "cancel" },
           { text: "Ir a Login", onPress: () => navigation.navigate("Login") },
-        ]
+        ],
       );
       return;
     }
@@ -83,6 +83,18 @@ export default function CartScreen() {
         detalles: detalles,
       };
 
+      console.log(
+        "[CartScreen] Enviando pedido:",
+        JSON.stringify(
+          {
+            query: CREATE_PEDIDO_MUTATION,
+            variables: { createPedidoInput: input },
+          },
+          null,
+          2,
+        ),
+      );
+
       const response = await apiClient.post("", {
         query: CREATE_PEDIDO_MUTATION,
         variables: { createPedidoInput: input },
@@ -93,14 +105,23 @@ export default function CartScreen() {
         console.log("Pedido creado:", created);
         Alert.alert("¡Pedido Enviado!", "Tu comida está en camino.");
         clearCart();
-        navigation.navigate("Menú"); // Volver al inicio
+        navigation.navigate("Menú");
       } else {
-        Alert.alert("Error", "No se pudo procesar el pedido.");
-        console.log(response.data.errors);
+        const errors = response.data.errors || [];
+        console.log("Error en respuesta:", errors);
+        Alert.alert(
+          "Error",
+          errors[0]?.message || "No se pudo procesar el pedido.",
+        );
       }
-    } catch (error) {
-      Alert.alert("Error", "Fallo de conexión");
-      console.error(error);
+    } catch (error: any) {
+      console.error("[CartScreen] Error completo:", error);
+      console.error("[CartScreen] Error data:", error.response?.data);
+      console.error("[CartScreen] Error status:", error.response?.status);
+      Alert.alert(
+        "Error",
+        error.response?.data?.errors?.[0]?.message || "Fallo de conexión",
+      );
     } finally {
       setIsSubmitting(false);
     }

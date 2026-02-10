@@ -16,6 +16,9 @@
     "axios": "^1.13.2",
     "date-fns": "^4.1.0",
     "expo": "~54.0.33",
+    "expo-file-system": "^19.0.21",
+    "expo-print": "~15.0.8",
+    "expo-sharing": "^14.0.8",
     "expo-status-bar": "~3.0.9",
     "lucide-react-native": "^0.559.0",
     "react": "19.1.0",
@@ -26,6 +29,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "expo-module-scripts": "^5.0.8",
     "typescript": "~5.9.2"
   },
   "private": true

@@ -25,7 +25,11 @@ const GET_ALL_PEDIDOS = `
       usuario { nombre email }
       detalles {
         cantidad
-        platillo { nombreItem }
+        platillo { 
+          id
+          nombreItem 
+          precio
+        }
       }
     }
   }
@@ -38,6 +42,16 @@ const UPDATE_PEDIDO = `
             estadoPedido
         }
     }
+`;
+
+const GET_PLATILLOS = `
+  query {
+    platillos {
+      id
+      nombreItem
+      precio
+    }
+  }
 `;
 
 export default function AdminOrdersScreen() {
@@ -54,21 +68,51 @@ export default function AdminOrdersScreen() {
         all.sort(
           (a: any, b: any) =>
             new Date(b.fechaPedido).getTime() -
-            new Date(a.fechaPedido).getTime()
-        )
+            new Date(a.fechaPedido).getTime(),
+        ),
       );
     } catch (error) {
-      console.error(error);
+      console.error("[AdminOrders] Error fetching orders:", error);
+      console.error(
+        "[AdminOrders] Error response data:",
+        (error as any).response?.data,
+      );
+      console.error(
+        "[AdminOrders] Error response status:",
+        (error as any).response?.status,
+      );
+      Alert.alert(
+        "Error",
+        "No se pudieron cargar los pedidos. Revisa la consola para más detalles.",
+      );
+      setOrders([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
+  const fetchPlatillosMap = async () => {
+    try {
+      const res = await apiClient.post("", { query: GET_PLATILLOS });
+      const list = res.data.data?.platillos || [];
+      const map: Record<string, any> = {};
+      list.forEach((p: any) => {
+        if (p.nombreItem) map[p.nombreItem.toLowerCase()] = p;
+        if (p.item_id) map[p.item_id] = p;
+        if (p.id) map[p.id] = p;
+      });
+      return map;
+    } catch (err) {
+      console.error("[AdminOrders] No se pudieron cargar platillos:", err);
+      return {};
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
       fetchOrders();
-    }, [])
+    }, []),
   );
 
   const changeStatus = (id: number, newStatus: string) => {
@@ -80,8 +124,8 @@ export default function AdminOrdersScreen() {
           // Actualización optimista (visual inmediata)
           setOrders((prev) =>
             prev.map((o) =>
-              o.id === id ? { ...o, estadoPedido: newStatus } : o
-            )
+              o.id === id ? { ...o, estadoPedido: newStatus } : o,
+            ),
           );
 
           try {
@@ -89,6 +133,14 @@ export default function AdminOrdersScreen() {
               query: UPDATE_PEDIDO,
               variables: { updatePedidoInput: { id, estadoPedido: newStatus } },
             });
+            // Si el admin autoriza el pedido, NO crear factura automáticamente.
+            // El vendedor será quien consulte "Pedidos autorizados" y genere la factura manualmente.
+            if (newStatus === "Autorizado") {
+              Alert.alert(
+                "Pedido autorizado",
+                "El pedido fue autorizado. El vendedor lo verá en su pantalla para crear la factura.",
+              );
+            }
           } catch (e) {
             Alert.alert("Error", "No se pudo actualizar en el servidor");
             fetchOrders(); // Revertir si falla
@@ -120,58 +172,61 @@ export default function AdminOrdersScreen() {
 
   // --- LÓGICA DE BOTONES DINÁMICOS ---
   const renderActions = (item: any) => {
-    if (
-      item.estadoPedido === "Entregado" ||
-      item.estadoPedido === "Cancelado"
-    ) {
-      return null; // No mostrar botones si ya terminó el ciclo
+    const status = item.estadoPedido;
+
+    // Pendiente -> allow Cancelar or Autorizar
+    if (status === "Pendiente") {
+      return (
+        <View style={styles.actions}>
+          <TouchableOpacity
+            style={[styles.btn, { backgroundColor: "#ef4444" }]}
+            onPress={() => changeStatus(item.id, "Cancelado")}
+          >
+            <X color="white" size={16} />
+            <Text style={styles.btnText}>Cancelar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.btn, { backgroundColor: "#10b981" }]}
+            onPress={() => changeStatus(item.id, "Autorizado")}
+          >
+            <Check color="white" size={16} />
+            <Text style={styles.btnText}>Autorizar</Text>
+          </TouchableOpacity>
+        </View>
+      );
     }
 
-    return (
-      <View style={styles.actions}>
-        {/* Si está PENDIENTE -> Mostrar AUTORIZAR o CANCELAR */}
-        {item.estadoPedido === "Pendiente" && (
-          <>
-            <TouchableOpacity
-              style={[styles.btn, { backgroundColor: "#ef4444" }]}
-              onPress={() => changeStatus(item.id, "Cancelado")}
-            >
-              <X color="white" size={16} />
-              <Text style={styles.btnText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.btn, { backgroundColor: "#10b981" }]}
-              onPress={() => changeStatus(item.id, "Autorizado")}
-            >
-              <Check color="white" size={16} />
-              <Text style={styles.btnText}>Autorizar</Text>
-            </TouchableOpacity>
-          </>
-        )}
-
-        {/* Si está AUTORIZADO -> Mostrar ENVIAR */}
-        {item.estadoPedido === "Autorizado" && (
+    // Autorizado -> allow Enviar
+    if (status === "Autorizado") {
+      return (
+        <View style={styles.actions}>
           <TouchableOpacity
             style={[styles.btn, { backgroundColor: "#3b82f6" }]}
             onPress={() => changeStatus(item.id, "Enviado")}
           >
             <Truck color="white" size={16} />
-            <Text style={styles.btnText}>Enviar Pedido</Text>
+            <Text style={styles.btnText}>Enviar</Text>
           </TouchableOpacity>
-        )}
+        </View>
+      );
+    }
 
-        {/* Si está ENVIADO -> Mostrar ENTREGAR */}
-        {item.estadoPedido === "Enviado" && (
+    // Enviado -> allow Entregado
+    if (status === "Enviado") {
+      return (
+        <View style={styles.actions}>
           <TouchableOpacity
-            style={[styles.btn, { backgroundColor: "#8b5cf6" }]}
+            style={[styles.btn, { backgroundColor: "#10b981" }]}
             onPress={() => changeStatus(item.id, "Entregado")}
           >
             <PackageCheck color="white" size={16} />
-            <Text style={styles.btnText}>Marcar Entregado</Text>
+            <Text style={styles.btnText}>Entregado</Text>
           </TouchableOpacity>
-        )}
-      </View>
-    );
+        </View>
+      );
+    }
+
+    return null;
   };
 
   if (loading && !refreshing)

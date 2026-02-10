@@ -2,7 +2,7 @@
 
 export interface Role {
   id: number;
-  nombre: "CLIENTE" | "ADMINISTRADOR";
+  nombre: "CLIENTE" | "ADMINISTRADOR" | "VENDEDOR";
 }
 
 export interface User {
