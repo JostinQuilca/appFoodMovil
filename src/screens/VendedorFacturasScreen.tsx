@@ -145,7 +145,7 @@ async function getAuthRestClient() {
   return client;
 }
 
-export default function VendedorFacturasScreen(): JSX.Element {
+export default function VendedorFacturasScreen() {
   const [facturas, setFacturas] = useState<Factura[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedFactura, setSelectedFactura] = useState<Factura | null>(null);
@@ -768,14 +768,14 @@ export default function VendedorFacturasScreen(): JSX.Element {
     );
     let iva = getVal(selectedFactura, "monto_iva", "montoIva", "tax");
     let total = getVal(selectedFactura, "monto_total", "montoTotal", "total");
-    
+
     // Si no viene IVA del servidor, calcular a partir del subtotal (12%)
     const subtotalNum = Number(subtotal || 0);
     // SIEMPRE recalcular IVA al 12% (ignorar lo que venga del servidor)
     iva = subtotalNum * 0.12;
     // Total siempre es subtotal + IVA (recalcular para garantizar consistencia)
     total = subtotalNum + Number(iva);
-    
+
     const estado = getVal(
       selectedFactura,
       "estado_factura",
@@ -876,10 +876,7 @@ export default function VendedorFacturasScreen(): JSX.Element {
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Resumen Financiero</Text>
-              {renderDetailRow(
-                "Subtotal",
-                `$${subtotalNum.toFixed(2)}`,
-              )}
+              {renderDetailRow("Subtotal", `$${subtotalNum.toFixed(2)}`)}
               {renderDetailRow("IVA (12%)", `$${Number(iva).toFixed(2)}`)}
               <View style={styles.divider} />
               {renderDetailRow("TOTAL", `$${Number(total).toFixed(2)}`)}
@@ -913,15 +910,16 @@ export default function VendedorFacturasScreen(): JSX.Element {
       getVal(item, "cliente_nombre", "clienteNombre", "cli_nombre") ||
       item?.usuario?.nombre ||
       "Cliente";
-    const subtotal = getVal(item, "monto_subtotal", "montoSubtotal", "subtotal") || "0";
+    const subtotal =
+      getVal(item, "monto_subtotal", "montoSubtotal", "subtotal") || "0";
     let iva = getVal(item, "monto_iva", "montoIva", "tax") || "0";
     let total = getVal(item, "monto_total", "montoTotal", "total") || "0";
-    
+
     // Recalcular total: SIEMPRE usar IVA 12% (ignorar lo que venga del servidor)
     const subtotalNum = Number(subtotal);
     const calculatedIva = subtotalNum * 0.12;
     const finalTotal = subtotalNum + calculatedIva;
-    
+
     const estado =
       getVal(item, "estado_factura", "estadoFactura", "estado") || "N/A";
 

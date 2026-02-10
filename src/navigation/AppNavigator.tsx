@@ -119,52 +119,50 @@ export default function AppNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {/* SI HAY USUARIO LOGUEADO */}
-        {user ? (
-          <>
-            {/* LÓGICA DE ROLES PARA PANTALLA PRINCIPAL */}
-            {user?.rol?.nombre === "ADMINISTRADOR" ? (
-              <Stack.Screen name="AdminPanel" component={AdminTabs} />
-            ) : user?.rol?.nombre === "VENDEDOR" ? (
-              <Stack.Screen name="VendedorApp" component={VendedorTabs} />
-            ) : (
-              <Stack.Screen name="ClientApp" component={ClientTabs} />
-            )}
-
-            {/* PANTALLAS COMUNES (Modales o Stacks) */}
-            <Stack.Screen
-              name="Profile"
-              component={ProfileScreen}
-              options={{
-                headerShown: true,
-                title: "Mi Perfil",
-                headerTintColor: "#D7263D",
-              }}
-            />
-          </>
+        {/* PANTALLA DE CLIENTE - SIEMPRE VISIBLE (Con o sin login) */}
+        {user?.rol?.nombre === "ADMINISTRADOR" ? (
+          <Stack.Screen name="AdminPanel" component={AdminTabs} />
+        ) : user?.rol?.nombre === "VENDEDOR" ? (
+          <Stack.Screen name="VendedorApp" component={VendedorTabs} />
         ) : (
-          <>
-            {/* SI NO HAY USUARIO (Login/Register) */}
-            <Stack.Screen
-              name="Login"
-              component={LoginScreen}
-              options={{
-                headerShown: true,
-                title: "Iniciar Sesión",
-                headerTintColor: "#D7263D",
-              }}
-            />
+          // CLIENTE O SIN USUARIO - Mostrar ClientTabs
+          <Stack.Screen name="ClientApp" component={ClientTabs} />
+        )}
 
-            <Stack.Screen
-              name="Register"
-              component={RegisterScreen}
-              options={{
-                headerShown: true,
-                title: "Crear Cuenta",
-                headerTintColor: "#D7263D",
-              }}
-            />
-          </>
+        {/* PANTALLAS DE AUTENTICACIÓN (Modal por encima) */}
+        <Stack.Group screenOptions={{ presentation: "modal" }}>
+          <Stack.Screen
+            name="Login"
+            component={LoginScreen}
+            options={{
+              headerShown: true,
+              title: "Iniciar Sesión",
+              headerTintColor: "#D7263D",
+            }}
+          />
+
+          <Stack.Screen
+            name="Register"
+            component={RegisterScreen}
+            options={{
+              headerShown: true,
+              title: "Crear Cuenta",
+              headerTintColor: "#D7263D",
+            }}
+          />
+        </Stack.Group>
+
+        {/* PANTALLA DE PERFIL (Disponible si está logueado) */}
+        {user && (
+          <Stack.Screen
+            name="Profile"
+            component={ProfileScreen}
+            options={{
+              headerShown: true,
+              title: "Mi Perfil",
+              headerTintColor: "#D7263D",
+            }}
+          />
         )}
       </Stack.Navigator>
     </NavigationContainer>
