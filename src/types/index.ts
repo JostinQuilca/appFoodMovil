@@ -11,6 +11,7 @@ export interface User {
   email: string;
   rol: Role;
   direccionPrincipal: string;
+  telefono?: string;
 }
 
 export interface Dish {

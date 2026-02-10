@@ -18,6 +18,7 @@ const LOGIN_MUTATION = `
         cedula
         nombre
         email
+        telefono
         direccionPrincipal
         rol { nombre }
       }
@@ -157,12 +158,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       });
 
+      console.log(
+        "Response changePassword:",
+        JSON.stringify(response.data, null, 2),
+      );
+
       if (response.data.errors) {
-        console.error("Errores GraphQL:", response.data.errors);
+        const errorMessage =
+          response.data.errors[0]?.message || "Error al cambiar contraseña";
+        console.error("GraphQL Errors:", response.data.errors);
         return {
           success: false,
-          message:
-            response.data.errors[0]?.message || "Error al cambiar contraseña",
+          message: errorMessage,
         };
       }
 
@@ -180,10 +187,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         message: "No se pudo cambiar la contraseña",
       };
     } catch (error: any) {
-      console.error("Error al cambiar contraseña:", error);
+      console.error(
+        "Error al cambiar contraseña:",
+        error.response?.data || error.message,
+      );
+      const errorMsg =
+        error.response?.data?.errors?.[0]?.message ||
+        error.response?.data?.message ||
+        error.message ||
+        "Error de conexión";
       return {
         success: false,
-        message: error.message || "Error de conexión",
+        message: errorMsg,
       };
     }
   };

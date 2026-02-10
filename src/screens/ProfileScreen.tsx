@@ -17,7 +17,6 @@ import {
   Mail,
   Shield,
   LogOut,
-  Phone,
   CreditCard,
   Eye,
   EyeOff,
@@ -45,13 +44,8 @@ export default function ProfileScreen() {
         style: "destructive",
         onPress: async () => {
           await logout();
-
-          // ✅ CORRECCIÓN: Forzar redirección al Menú (ClientApp)
-          // Esto cierra el perfil y reinicia la historia de navegación
-          navigation.reset({
-            index: 0,
-            routes: [{ name: "ClientApp" }],
-          });
+          // ✅ No necesitas navigation.reset() - el AppNavigator se rerenderiza automáticamente
+          // cuando user cambia a null en el contexto de autenticación
         },
       },
     ]);
@@ -106,6 +100,9 @@ export default function ProfileScreen() {
   const roleColor =
     user?.rol?.nombre === "ADMINISTRADOR" ? "#D7263D" : "#3b82f6";
 
+  // Obtener inicial del rol
+  const roleInitial = user?.rol?.nombre === "ADMINISTRADOR" ? "A" : "C";
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {/* 1. CABECERA CON AVATAR */}
@@ -117,7 +114,7 @@ export default function ProfileScreen() {
 
           <Shield size={14} color={roleColor} />
           <Text style={[styles.roleText, { color: roleColor }]}>
-            {user?.rol?.nombre}
+            {roleInitial}
           </Text>
         </View>
       </View>
@@ -148,13 +145,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Teléfono */}
-        <View style={styles.infoRow}>
-          <View style={styles.iconBox}>
-            <Phone size={20} color="#555" />
-          </View>
-        </View>
-
         {/* Dirección (si existe) */}
         {user?.direccionPrincipal && (
           <View style={styles.infoRow}>
@@ -169,14 +159,14 @@ export default function ProfileScreen() {
         )}
       </View>
 
-      {/* 3. BOTÓN DE CAMBIAR CONTRASEÑA */}
-      <TouchableOpacity
+      {/* 3. BOTÓN DE CAMBIAR CONTRASEÑA - DESACTIVADO TEMPORALMENTE */}
+      {/* <TouchableOpacity
         style={styles.changePasswordBtn}
         onPress={() => setShowChangePassword(true)}
       >
         <Lock size={20} color="#fff" />
         <Text style={styles.changePasswordText}>Cambiar Contraseña</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       {/* 4. BOTÓN DE CERRAR SESIÓN */}
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>

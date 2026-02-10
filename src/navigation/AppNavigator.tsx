@@ -99,44 +99,51 @@ export default function AppNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {/* LÓGICA DE ROLES PARA PANTALLA PRINCIPAL */}
-        {user?.rol?.nombre === "ADMINISTRADOR" ? (
-          <Stack.Screen name="AdminPanel" component={AdminTabs} />
+        {/* SI HAY USUARIO LOGUEADO */}
+        {user ? (
+          <>
+            {/* LÓGICA DE ROLES PARA PANTALLA PRINCIPAL */}
+            {user?.rol?.nombre === "ADMINISTRADOR" ? (
+              <Stack.Screen name="AdminPanel" component={AdminTabs} />
+            ) : (
+              <Stack.Screen name="ClientApp" component={ClientTabs} />
+            )}
+
+            {/* PANTALLAS COMUNES (Modales o Stacks) */}
+            <Stack.Screen
+              name="Profile"
+              component={ProfileScreen}
+              options={{
+                headerShown: true,
+                title: "Mi Perfil",
+                headerTintColor: "#D7263D",
+              }}
+            />
+          </>
         ) : (
-          <Stack.Screen name="ClientApp" component={ClientTabs} />
+          <>
+            {/* SI NO HAY USUARIO (Login/Register) */}
+            <Stack.Screen
+              name="Login"
+              component={LoginScreen}
+              options={{
+                headerShown: true,
+                title: "Iniciar Sesión",
+                headerTintColor: "#D7263D",
+              }}
+            />
+
+            <Stack.Screen
+              name="Register"
+              component={RegisterScreen}
+              options={{
+                headerShown: true,
+                title: "Crear Cuenta",
+                headerTintColor: "#D7263D",
+              }}
+            />
+          </>
         )}
-
-        {/* PANTALLAS COMUNES (Modales o Stacks) */}
-
-        <Stack.Screen
-          name="Login"
-          component={LoginScreen}
-          options={{
-            headerShown: true,
-            title: "Iniciar Sesión",
-            headerTintColor: "#D7263D",
-          }}
-        />
-
-        <Stack.Screen
-          name="Register"
-          component={RegisterScreen}
-          options={{
-            headerShown: true,
-            title: "Crear Cuenta",
-            headerTintColor: "#D7263D",
-          }}
-        />
-
-        <Stack.Screen
-          name="Profile"
-          component={ProfileScreen}
-          options={{
-            headerShown: true,
-            title: "Mi Perfil",
-            headerTintColor: "#D7263D",
-          }}
-        />
       </Stack.Navigator>
     </NavigationContainer>
   );
